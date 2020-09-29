@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"log"
 
+	badger "github.com/dgraph-io/badger/v2"
 	"github.com/spf13/viper"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"layeh.com/radius"
 )
 
-var db *gorm.DB
+var db *badger.DB
 var config MConfig
 
 /*
@@ -33,11 +32,10 @@ func main() {
 		panic(fmt.Errorf("解析配置文件出错: %s", err.Error()))
 	}
 
-	db, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	db, err = badger.Open(badger.DefaultOptions("./db/"))
 	if err != nil {
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&MWifiCode{})
 
 	LoadData()
 

@@ -1,5 +1,4 @@
-# - hosts: dps_seafile
-- hosts: localhost
+- hosts: dps_seafile
   tasks:
     - name: Get git rev version
       local_action: command git rev-parse --short HEAD
@@ -10,12 +9,10 @@
         - GIT_TAG: GIT_COMMIT_ID.stdout
         - LDFLAGS: -ldflags "-X main.GitTag={{GIT_TAG}} -X main.BuildTime={{BUILD_TIME}}"
       environment:
-        CGO_ENABLED: 1
+        CGO_ENABLED: 0
         GOOS: linux
         GOARCH: amd64
       local_action: command go build -o dist/ -i {{LDFLAGS}}
-    # - name: Update database schema
-      # local_action: command sql-migrate up --env=production
     - name: Push local folder to remote host
       synchronize:
         src: dist/
@@ -23,6 +20,5 @@
         rsync_opts: '-avcz'
     - name: Run new wfbackend
       command: sh start.sh
-      # command: chdir=/www/wfbackend sh start.sh
       args:
         chdir: /home/wgjtyu/wfradio/

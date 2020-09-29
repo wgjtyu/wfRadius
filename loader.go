@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
+	badger "github.com/dgraph-io/badger/v2"
 	"github.com/imroc/req"
-	"gorm.io/gorm"
 )
 
 // LoadData 从后端加载用户wifi数据
@@ -21,21 +23,29 @@ func LoadData() {
 	}
 
 	var codes []MWifiCode
-	var result *gorm.DB
 	resp.ToJSON(&codes)
 	if len(codes) > 0 {
-		tx := db.Begin()
-		for _, c := range codes {
-			fmt.Printf("保存数据: %v\n", c)
-			result = tx.Create(&c)
-			if result.Error != nil {
-				fmt.Printf("保存WifiCodes数据出错: %s\n", result.Error.Error())
-				tx.Rollback()
-				return
+		err := db.Update(func(txn *badger.Txn) error {
+			for _, c := range codes { // FIXME 保存失败时要rollback
+				fmt.Printf("保存数据: %v\n", c)
+				jc, err := json.Marshal(c)
+				if err != nil {
+					fmt.Printf("WifiCodes数据转换成json出错: %s\n", err.Error())
+					return err
+				}
+				var key bytes.Buffer
+				key.WriteString("PHONE")
+				key.WriteString(c.UserPhone)
+				err = txn.Set(key.Bytes(), jc)
+				if err != nil {
+					fmt.Printf("数据库保存WifiCodes数据出错: %s\n", err.Error())
+					return err
+				}
 			}
+			return nil
+		})
+		if err != nil {
+			panic(err)
 		}
-		tx.Commit()
 	}
-
-	fmt.Printf("%v\n", codes)
 }
