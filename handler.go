@@ -58,7 +58,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 		return
 	} else {
 		fmt.Printf("wifiCode=%v\n", wifiCode)
-		if wifiCode.WifiCode == password {
+		if wifiCode.Valid && wifiCode.WifiCode == password {
 			fmt.Printf("wifiCode==password\n")
 			code = radius.CodeAccessAccept
 			// } else if srvType == 0 {
