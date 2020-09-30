@@ -6,35 +6,59 @@ import (
 
 	badger "github.com/dgraph-io/badger/v2"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"layeh.com/radius"
+)
+
+var (
+	// BuildTime 构建时间
+	BuildTime = "Test Version"
+	// GitTag Git的Tag标签
+	GitTag = "Test Version"
 )
 
 var db *badger.DB
 var config MConfig
 
 /*
-从线上获取用户的登录账号和密码
-登录账号为用户的手机号
-密码为线上系统生成的密码
-将用户登录记录发回线上系统
+TODO 将用户登录记录发回线上系统
 */
 func main() {
 	var err error
+
+	// 配置日志模块
+	var logger *zap.Logger
+	if config.Environment == EnvirIsProd {
+		logger, err = zap.NewProduction()
+	} else if config.Environment == EnvirIsDev {
+		logger, err = zap.NewDevelopment()
+	}
+	if err != nil {
+		panic(fmt.Sprintf("创建日志模块出错: %s\n", err.Error()))
+	}
+	zap.ReplaceGlobals(logger)
+	defer logger.Sync()
+
+	zap.S().Infof("GitTag: %s\n", GitTag)
+	zap.S().Infof("BuildTime: %s\n", BuildTime)
 
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	err = viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("读取配置文件出错: %s", err.Error()))
+		zap.S().Errorf("读取配置文件出错: %s", err.Error())
+		return
 	}
 	err = viper.Unmarshal(&config)
 	if err != nil {
-		panic(fmt.Errorf("解析配置文件出错: %s", err.Error()))
+		zap.S().Errorf("解析配置文件出错: %s", err.Error())
+		return
 	}
 
 	db, err = badger.Open(badger.DefaultOptions("./db/"))
 	if err != nil {
-		panic("failed to connect database")
+		zap.S().Errorf("连接数据库出错: %s", err.Error())
+		return
 	}
 
 	LoadData()
@@ -44,7 +68,7 @@ func main() {
 		SecretSource: radius.StaticSecretSource([]byte(`secret`)),
 	}
 
-	log.Printf("Starting server on :1812")
+	zap.L().Info("Starting server on :1812")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}

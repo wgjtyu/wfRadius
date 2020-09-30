@@ -16,9 +16,20 @@ type MWifiCode struct {
 // TableName 返回MWifiCode的表名
 func (MWifiCode) TableName() string { return "m_wifi_code" }
 
+// ENVTYPE 运行环境类型
+type ENVTYPE uint32
+
+const (
+	// EnvirIsProd 生产环境
+	EnvirIsProd ENVTYPE = 0
+	// EnvirIsDev 开发环境
+	EnvirIsDev ENVTYPE = 1
+)
+
 // MConfig 配置文件的结构
 type MConfig struct {
-	Name    string
-	Backend string
-	Token   string
+	Name        string
+	Backend     string
+	Token       string
+	Environment ENVTYPE
 }
