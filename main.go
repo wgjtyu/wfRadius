@@ -5,6 +5,7 @@ import (
 	"log"
 
 	badger "github.com/dgraph-io/badger/v2"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"layeh.com/radius"
@@ -61,7 +62,13 @@ func main() {
 		return
 	}
 
-	LoadData()
+	c := cron.New()
+	c.AddFunc("*/20 * * * *", func() {
+		zap.L().Info(("重新加载数据"))
+		LoadData()
+	})
+	c.Start()
+	LoadData() // 首次重新加载数据
 
 	server := radius.PacketServer{
 		Handler:      radius.HandlerFunc(handler),
