@@ -13,12 +13,4 @@
         GOOS: linux
         GOARCH: amd64
       local_action: command go build -o dist/ -i {{LDFLAGS}}
-    - name: Push local folder to remote host
-      synchronize:
-        src: dist/
-        dest: /home/wgjtyu/wfradio/
-        rsync_opts: '-avcz'
-    - name: Run new wfbackend
-      command: sh start.sh
-      args:
-        chdir: /home/wgjtyu/wfradio/
+        # 下一步，上传wfRadius文件去sae

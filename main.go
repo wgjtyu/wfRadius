@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
+
+	"github.com/jpillora/overseer"
+	"github.com/jpillora/overseer/fetcher"
 
 	badger "github.com/dgraph-io/badger/v2"
 	"github.com/robfig/cron/v3"
@@ -24,7 +28,7 @@ var config MConfig
 /*
 TODO 将用户登录记录发回线上系统
 */
-func main() {
+func prog(state overseer.State) {
 	var err error
 
 	// 配置日志模块
@@ -40,21 +44,8 @@ func main() {
 	zap.ReplaceGlobals(logger)
 	defer logger.Sync()
 
-	zap.S().Infof("GitTag: %s\n", GitTag)
-	zap.S().Infof("BuildTime: %s\n", BuildTime)
-
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-	err = viper.ReadInConfig()
-	if err != nil {
-		zap.S().Errorf("读取配置文件出错: %s", err.Error())
-		return
-	}
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		zap.S().Errorf("解析配置文件出错: %s", err.Error())
-		return
-	}
+	zap.S().Infof("GitTag2: %s", GitTag)
+	zap.S().Infof("BuildTime: %s", BuildTime)
 
 	db, err = badger.Open(badger.DefaultOptions("./db/"))
 	if err != nil {
@@ -79,4 +70,38 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("退出程序")
+}
+
+func main() {
+	var err error
+
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	err = viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("读取配置文件出错: %s", err.Error()))
+	}
+	err = viper.Unmarshal(&config)
+	if err != nil {
+		panic(fmt.Errorf("解析配置文件出错: %s", err.Error()))
+	}
+
+	var f fetcher.Interface
+	if config.Environment == EnvirIsDev {
+		f = &fetcher.File{
+			Path: "wfRadius.next",
+		}
+	} else if config.Environment == EnvirIsProd {
+		f = &fetcher.HTTP{
+			URL:      "http://goshop-file.stor.sinaapp.com/wfRadius",
+			Interval: 30 * time.Minute,
+		}
+	}
+	overseer.Run(overseer.Config{
+		Program:   prog,
+		NoRestart: true,
+		Address:   ":1812",
+		Fetcher:   f,
+	})
 }
