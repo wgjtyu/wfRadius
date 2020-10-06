@@ -7,10 +7,9 @@ import (
 // MWifiCode 用户Wifi登录密码
 type MWifiCode struct {
 	ID         uint64    `json:"id"`
-	UserID     uint64    `json:"userId"`    // 用户ID
-	UserPhone  string    `json:"userPhone"` // 用户手机号
+	UserID     uint64    `json:"userId"` // 用户ID
 	WifiCode   string    `json:"wifiCode"`
-	Valid      bool      `json:"valid"` // 通过此字段来判定该手机号是否被禁止连接wifi
+	Valid      bool      `json:"valid"` // 通过此字段来判定该用户是否被禁止连接wifi
 	UpdateTime time.Time `json:"updateTime"`
 }
 
@@ -27,7 +26,8 @@ const (
 // MConfig 配置文件的结构
 type MConfig struct {
 	Name        string
-	Backend     string
+	HTTPBackend string `mapstructure:"http_backend"`
+	WSBackend   string `mapstructure:"ws_backend"`
 	Token       string
 	Environment ENVTYPE
 }

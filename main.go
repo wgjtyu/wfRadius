@@ -10,7 +10,6 @@ import (
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	badger "github.com/dgraph-io/badger/v2"
-	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -68,13 +67,7 @@ func prog(state overseer.State) {
 		return
 	}
 
-	c := cron.New()
-	c.AddFunc("*/20 * * * *", func() {
-		zap.L().Info(("重新加载数据"))
-		LoadData()
-	})
-	c.Start()
-	LoadData() // 首次重新加载数据
+	LoadData() // 重新加载数据
 
 	server := radius.PacketServer{
 		Handler:      radius.HandlerFunc(handler),

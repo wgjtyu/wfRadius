@@ -27,7 +27,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	var wifiCode MWifiCode
 	err := db.View(func(txn *badger.Txn) error {
 		var key bytes.Buffer
-		key.WriteString("PHONE")
+		key.WriteString("ID")
 		key.WriteString(username)
 		fmt.Printf("Key=%s\n", key.String())
 		item, err := txn.Get(key.Bytes())
