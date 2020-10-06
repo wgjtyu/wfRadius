@@ -105,7 +105,7 @@ func main() {
 		}
 	} else if config.Environment == EnvirIsProd {
 		f = &fetcher.HTTP{
-			URL:      "http://goshop-file.stor.sinaapp.com/wfRadius",
+			URL:      "http://file.atsuas.cn/wfRadius",
 			Interval: 30 * time.Minute,
 		}
 	}

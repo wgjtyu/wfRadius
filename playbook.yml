@@ -1,4 +1,5 @@
-- hosts: dps_seafile
+- hosts: localhost
+# - hosts: dps_seafile
   tasks:
     - name: Get git rev version
       local_action: command git rev-parse --short HEAD
