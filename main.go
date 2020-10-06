@@ -55,10 +55,14 @@ func prog(state overseer.State) {
 	zap.ReplaceGlobals(logger)
 	defer logger.Sync()
 
+	// 输出当前版本和构建时间
 	zap.S().Infof("GitTag: %s", GitTag)
 	zap.S().Infof("BuildTime: %s", BuildTime)
 
-	db, err = badger.Open(badger.DefaultOptions("./db/"))
+	// 配置数据库
+	bOpts := badger.DefaultOptions("./db/")
+	bOpts.Logger = &badgerLogger{zap.S()}
+	db, err = badger.Open(bOpts)
 	if err != nil {
 		zap.S().Errorf("连接数据库出错: %s", err.Error())
 		return
