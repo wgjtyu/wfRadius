@@ -6,7 +6,7 @@
     - name: Build
       vars:
         - BUILD_TIME: "{{ansible_date_time.iso8601}}"
-        - GIT_TAG: GIT_COMMIT_ID.stdout
+        - GIT_TAG: "{{GIT_COMMIT_ID.stdout}}"
         - LDFLAGS: -ldflags "-X main.GitTag={{GIT_TAG}} -X main.BuildTime={{BUILD_TIME}}"
       environment:
         CGO_ENABLED: 0

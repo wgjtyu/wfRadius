@@ -7,11 +7,13 @@ import (
 
 	"github.com/jpillora/overseer"
 	"github.com/jpillora/overseer/fetcher"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	badger "github.com/dgraph-io/badger/v2"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"layeh.com/radius"
 )
 
@@ -34,7 +36,16 @@ func prog(state overseer.State) {
 	// 配置日志模块
 	var logger *zap.Logger
 	if config.Environment == EnvirIsProd {
-		logger, err = zap.NewProduction()
+		w := zapcore.AddSync(&lumberjack.Logger{
+			Filename: "zaplog",
+			MaxSize:  10, // megabytes
+		})
+		core := zapcore.NewCore(
+			zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+			w,
+			zap.InfoLevel,
+		)
+		logger = zap.New(core)
 	} else if config.Environment == EnvirIsDev {
 		logger, err = zap.NewDevelopment()
 	}
@@ -44,7 +55,7 @@ func prog(state overseer.State) {
 	zap.ReplaceGlobals(logger)
 	defer logger.Sync()
 
-	zap.S().Infof("GitTag2: %s", GitTag)
+	zap.S().Infof("GitTag: %s", GitTag)
 	zap.S().Infof("BuildTime: %s", BuildTime)
 
 	db, err = badger.Open(badger.DefaultOptions("./db/"))
