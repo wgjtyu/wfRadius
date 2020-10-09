@@ -15,3 +15,7 @@
         GOARCH: amd64
       local_action: command go build -o dist/ -i {{LDFLAGS}}
         # 下一步，上传wfRadius文件去sae
+    - name: Upload
+      local_action: command qshell rput --overwrite georgewang wfRadius dist/wfRadius
+    - name: Refresh CDN
+      local_action: command qshell cdnrefresh -i qiniu_file_list
