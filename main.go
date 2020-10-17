@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/imroc/req"
 	"github.com/jpillora/overseer"
 	"github.com/jpillora/overseer/fetcher"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
@@ -46,6 +47,7 @@ func prog(state overseer.State) {
 		)
 		logger = zap.New(core)
 	} else if config.Environment == EnvirIsDev {
+		req.Debug = true
 		logger, err = zap.NewDevelopment()
 	}
 	if err != nil {

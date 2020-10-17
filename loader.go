@@ -29,19 +29,17 @@ func reader(c *websocket.Conn) {
 	zap.S().Debugf("reader: 启动")
 	defer func() {
 		zap.S().Debugf("reader: 关闭")
+		// ws关闭后，退出程序，gRunner重新开启程序发起ws连接
 		if c != nil {
 			c.Close()
 		}
-		err := recover()
-		if err != nil {
-			fmt.Println(err)
-		}
+		panic(nil)
 	}()
 	for {
 		var result msgPack
 		err := c.ReadJSON(&result)
 		if err != nil { //FIXME 后端进程关闭导致的出错，需要重新连接?
-			zap.S().Debugf("reader: 读取JSON出错: %s", err.Error())
+			zap.L().Debug("reader: 读取JSON出错", zap.String("error", err.Error()))
 			break
 		}
 		if result.Tag == "WIFI_CODE_ADD" || result.Tag == "WIFI_CODE_UPDATE" { // 添加或更新
@@ -52,6 +50,11 @@ func reader(c *websocket.Conn) {
 			var codes []MWifiCode
 			mapstructure.Decode(result.RawMsg, &codes)
 			saveCodes(codes)
+		} else if result.Tag == "COMMAND" { // 执行指令
+			zap.S().Debugf("reader: 获取到指令: %s", result.RawMsg)
+			var command CommandMessage
+			mapstructure.Decode(result.RawMsg, &command)
+			go Proceed(command)
 		}
 	}
 }
@@ -107,7 +110,10 @@ func LoadData() {
 	cookie := new(http.Cookie)
 	cookie.Name = "token"
 	cookie.Value = config.Token
-	header := http.Header{"Cookie": []string{cookie.String()}}
+	header := http.Header{
+		"Origin": []string{"https://www.atsuas.cn"},
+		"Cookie": []string{cookie.String()},
+	}
 
 	url := config.WSBackend + "/api/ws"
 	c, _, err := websocket.DefaultDialer.Dial(url, header)
