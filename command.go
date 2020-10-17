@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/imroc/req"
@@ -24,7 +23,7 @@ type InnerMessage struct {
 func Proceed(msg CommandMessage) {
 	var inMsg InnerMessage
 	json.Unmarshal([]byte(msg.Content), &inMsg)
-	fmt.Println(inMsg.Name)
+	zap.L().Info("处理设备指令", zap.String("command", inMsg.Name))
 	if inMsg.Name == "VERSION" {
 		putResult(msg.CommandID, &map[string]interface{}{
 			"GitTag":    GitTag,

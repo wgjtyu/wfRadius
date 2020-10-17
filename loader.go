@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -71,7 +70,7 @@ func updateCode(code *MWifiCode) error {
 		key.WriteString(strconv.FormatUint(code.UserID, 10))
 		err = txn.Set(key.Bytes(), jc)
 		if err != nil {
-			fmt.Printf("数据库保存WifiCodes数据出错: %s\n", err.Error())
+			zap.L().Warn("数据库保存WifiCodes数据出错", zap.String("error", err.Error()))
 			return err
 		}
 		return nil
@@ -83,10 +82,9 @@ func saveCodes(codes []MWifiCode) error {
 	if len(codes) > 0 {
 		err := db.Update(func(txn *badger.Txn) error {
 			for _, c := range codes { // FIXME 保存失败时要rollback
-				fmt.Printf("保存数据: %v\n", c)
 				jc, err := json.Marshal(c)
 				if err != nil {
-					fmt.Printf("WifiCodes数据转换成json出错: %s\n", err.Error())
+					zap.L().Warn("WifiCodes数据转换成json出错", zap.String("error", err.Error()))
 					return err
 				}
 				var key bytes.Buffer
@@ -94,7 +92,7 @@ func saveCodes(codes []MWifiCode) error {
 				key.WriteString(strconv.FormatUint(c.UserID, 10))
 				err = txn.Set(key.Bytes(), jc)
 				if err != nil {
-					fmt.Printf("数据库保存WifiCodes数据出错: %s\n", err.Error())
+					zap.L().Warn("数据库保存WifiCodes数据出错", zap.String("error", err.Error()))
 					return err
 				}
 			}
