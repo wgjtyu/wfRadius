@@ -50,7 +50,7 @@ func reader(c *websocket.Conn) {
 			mapstructure.Decode(result.RawMsg, &codes)
 			saveCodes(codes)
 		} else if result.Tag == "COMMAND" { // 执行指令
-			zap.S().Debugf("reader: 获取到指令: %s", result.RawMsg)
+			zap.L().Info("reader-获取到指令")
 			var command CommandMessage
 			mapstructure.Decode(result.RawMsg, &command)
 			go Proceed(command)

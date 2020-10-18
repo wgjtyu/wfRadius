@@ -7,6 +7,7 @@ import (
 	"log"
 
 	badger "github.com/dgraph-io/badger/v2"
+	"go.uber.org/zap"
 	"layeh.com/radius"
 	"layeh.com/radius/rfc2865"
 )
@@ -19,10 +20,15 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	srv := rfc2865.LoginService_Get(r.Packet)
 	srvType := rfc2865.ServiceType_Get(r.Packet)
 
-	fmt.Printf("Code: %v, ip: %v, Port: %v, srv: %v, srvType: %v\n", r.Code, ip, port, srv, srvType)
-	fmt.Printf("UserName: %s, Password: %s\n", username, password)
-	fmt.Printf("LocalAddr: %v\n", r.LocalAddr.String())
-	fmt.Printf("RemoteAddr: %v\n", r.RemoteAddr.String())
+	zap.L().Info("handler-用户请求信息", zap.String("Code", r.Code.String()),
+		zap.String("IP", ip.String()),
+		zap.String("Port", port.String()),
+		zap.String("Srv", srv.String()),
+		zap.String("SrvType", srvType.String()),
+		zap.String("UserId", username),
+		zap.String("Password", password),
+		zap.String("LocalAddr", r.LocalAddr.String()),
+		zap.String("RemoteAddr", r.RemoteAddr.String()))
 
 	var wifiCode MWifiCode
 	err := db.View(func(txn *badger.Txn) error {
@@ -32,19 +38,19 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 		fmt.Printf("Key=%s\n", key.String())
 		item, err := txn.Get(key.Bytes())
 		if err != nil {
-			fmt.Printf("handler-txn.Get出错: %s\n", err.Error())
+			zap.L().Warn("handler-txn.Get出错", zap.String("error", err.Error()))
 			return err
 		}
 
 		var valCopy []byte
 		valCopy, err = item.ValueCopy(nil)
 		if err != nil {
-			fmt.Printf("handler-item.ValueCopy出错: %s\n", err.Error())
+			zap.L().Warn("handler-item.ValueCopy出错", zap.String("error", err.Error()))
 			return err
 		}
 		err = json.Unmarshal(valCopy, &wifiCode)
 		if err != nil {
-			fmt.Printf("handler-json.Unmarshal出错: %s\n", err.Error())
+			zap.L().Warn("handler-json.Unmarshal出错", zap.String("error", err.Error()))
 			return err
 		}
 
@@ -54,18 +60,15 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	if err == badger.ErrKeyNotFound {
 		code = radius.CodeAccessReject
 	} else if err != nil {
-		fmt.Printf("db获取数据出错: %s\n", err.Error())
+		zap.L().Warn("handler-db获取数据出错", zap.String("error", err.Error()))
 		return
 	} else {
-		fmt.Printf("wifiCode=%v\n", wifiCode)
 		if wifiCode.Valid && wifiCode.WifiCode == password {
-			fmt.Printf("wifiCode==password\n")
 			code = radius.CodeAccessAccept
 			// } else if srvType == 0 {
 			// fmt.Printf("srvType==0\n")
 			// code = radius.CodeAccessAccept
 		} else {
-			fmt.Printf("reject\n")
 			code = radius.CodeAccessReject
 		}
 	}
