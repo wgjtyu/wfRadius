@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/imroc/req"
+	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 )
 
@@ -28,6 +29,14 @@ func Proceed(msg CommandMessage) {
 		putResult(msg.CommandID, &map[string]interface{}{
 			"GitTag":    GitTag,
 			"BuildTime": BuildTime})
+	} else if inMsg.Name == "GET_CONFIG" {
+		var mapObj map[string]interface{}
+		err := mapstructure.Decode(config, &mapObj)
+		if err != nil {
+			zap.L().Warn("Proceed-转换config出错", zap.String("error", err.Error()))
+			return
+		}
+		putResult(msg.CommandID, &mapObj)
 	} else {
 		putResult(msg.CommandID, &map[string]interface{}{"error": "unknown command"})
 	}
