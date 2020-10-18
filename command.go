@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/imroc/req"
 	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -17,7 +19,8 @@ type CommandMessage struct {
 
 // InnerMessage 设备指令消息结构
 type InnerMessage struct {
-	Name string `json:"name"`
+	Name   string            `json:"name"`
+	Params map[string]string `json:"params"`
 }
 
 // Proceed 处理设备指令并返回结果
@@ -37,6 +40,16 @@ func Proceed(msg CommandMessage) {
 			return
 		}
 		putResult(msg.CommandID, &mapObj)
+	} else if inMsg.Name == "SET_CONFIG" {
+		for key, value := range inMsg.Params {
+			viper.Set(key, value)
+		}
+		err := viper.WriteConfig()
+		if err != nil {
+			zap.L().Warn("Proceed-保存viper配置失败", zap.String("error", err.Error()))
+			return
+		}
+		putResult(msg.CommandID, &map[string]interface{}{"status": "ok"})
 	} else {
 		putResult(msg.CommandID, &map[string]interface{}{"error": "unknown command"})
 	}
@@ -44,6 +57,7 @@ func Proceed(msg CommandMessage) {
 
 // putResult 返回设备指令的执行结果给后端
 func putResult(commandID uint64, result *map[string]interface{}) {
+	time.Sleep(5 * time.Second)
 	cookie := new(http.Cookie)
 	cookie.Name = "token"
 	cookie.Value = config.Token
