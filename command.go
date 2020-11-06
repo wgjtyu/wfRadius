@@ -42,6 +42,7 @@ func Proceed(msg CommandMessage) {
 		putResult(msg.CommandID, &mapObj)
 	} else if inMsg.Name == "SET_CONFIG" {
 		for key, value := range inMsg.Params {
+			zap.L().Info("Proceed-设置配置", zap.String("key", key), zap.String("value", value))
 			viper.Set(key, value)
 		}
 		err := viper.WriteConfig()

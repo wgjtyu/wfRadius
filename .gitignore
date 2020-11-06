@@ -2,3 +2,4 @@ config.toml
 test.db
 /dist/
 /db/
+/.idea/
