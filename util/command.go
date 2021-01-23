@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"encoding/json"
@@ -34,9 +34,9 @@ func Proceed(msg CommandMessage) {
 			"BuildTime": BuildTime})
 	} else if inMsg.Name == "GET_CONFIG" {
 		var mapObj map[string]interface{}
-		err := mapstructure.Decode(config, &mapObj)
+		err := mapstructure.Decode(Config, &mapObj)
 		if err != nil {
-			zap.L().Warn("Proceed-转换config出错", zap.String("error", err.Error()))
+			zap.L().Warn("Proceed-转换config出错", zap.Error(err))
 			return
 		}
 		putResult(msg.CommandID, &mapObj)
@@ -47,7 +47,7 @@ func Proceed(msg CommandMessage) {
 		}
 		err := viper.WriteConfig()
 		if err != nil {
-			zap.L().Warn("Proceed-保存viper配置失败", zap.String("error", err.Error()))
+			zap.L().Warn("Proceed-保存viper配置失败", zap.Error(err))
 			return
 		}
 		putResult(msg.CommandID, &map[string]interface{}{"status": "ok"})
@@ -61,7 +61,7 @@ func putResult(commandID uint64, result *map[string]interface{}) {
 	time.Sleep(5 * time.Second)
 	cookie := new(http.Cookie)
 	cookie.Name = "token"
-	cookie.Value = config.Token
+	cookie.Value = Config.Token
 
 	content, err := json.Marshal(result)
 	if err != nil {
@@ -75,7 +75,7 @@ func putResult(commandID uint64, result *map[string]interface{}) {
 	}
 
 	r := req.New()
-	resp, err := r.Post(config.HTTPBackend+"/api/device/command_result_upload", cookie, req.BodyJSON(&body))
+	resp, err := r.Post(Config.HTTPBackend+"/api/device/command_result_upload", cookie, req.BodyJSON(&body))
 	if err != nil {
 		zap.L().Error("上传指令结果, 本地出错", zap.String("error", err.Error()))
 		return

@@ -8,6 +8,8 @@ import (
 	"layeh.com/radius"
 	"layeh.com/radius/rfc2865"
 	"layeh.com/radius/rfc2866"
+	"wfRadius/model"
+	"wfRadius/storage"
 )
 
 func handler(w radius.ResponseWriter, r *radius.Request) {
@@ -20,8 +22,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	callingStationID := rfc2865.CallingStationID_GetString(r.Packet) // 客户端Mac地址
 	calledStationID := rfc2865.CalledStationID_GetString(r.Packet) // AP的MAC地址
 	framedIpAddress := rfc2865.FramedIPAddress_Get(r.Packet) // 客户端的IP地址
-	acctSessionId := rfc2866.AcctSessionID_GetString() // 计费会话ID
-
+	acctSessionId := rfc2866.AcctSessionID_GetString(r.Packet) // 计费会话ID
 
 	zap.L().Info("handler-用户请求信息", zap.String("Code", r.Code.String()),
 		zap.String("IP", ip.String()),
@@ -37,8 +38,8 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 		zap.String("LocalAddr", r.LocalAddr.String()),
 		zap.String("RemoteAddr", r.RemoteAddr.String()))
 
-	var wifiCode MWifiCode
-	err := db.View(func(txn *badger.Txn) error {
+	var wifiCode model.MWifiCode
+	err := storage.BadgerDB.View(func(txn *badger.Txn) error {
 		var key bytes.Buffer
 		key.WriteString("ID")
 		key.WriteString(username)
@@ -82,5 +83,5 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	zap.L().Info("Handler finished",
 		zap.String("code", code.String()),
 		zap.String("remoteAddr", r.RemoteAddr.String()))
-	w.Write(r.Response(code))
+	_ = w.Write(r.Response(code))
 }

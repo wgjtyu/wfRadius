@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"wfRadius/model"
+	"wfRadius/storage"
+	"wfRadius/util"
+	"wfRadius/ws"
 
 	"github.com/jpillora/overseer"
 	"github.com/jpillora/overseer/fetcher"
@@ -16,15 +20,7 @@ import (
 	"layeh.com/radius"
 )
 
-var (
-	// BuildTime 构建时间
-	BuildTime = "Test Version"
-	// GitTag Git的Tag标签
-	GitTag = "Test Version"
-)
 
-var db *badger.DB
-var config MConfig
 
 /*
 TODO 将用户登录记录发回线上系统
@@ -34,7 +30,7 @@ func prog(state overseer.State) {
 
 	// 配置日志模块
 	var logger *zap.Logger
-	if config.Environment == EnvirIsProd {
+	if util.Config.Environment == model.EnvirIsProd {
 		w := zapcore.AddSync(&lumberjack.Logger{
 			Filename: "zaplog",
 			MaxSize:  10, // megabytes
@@ -47,7 +43,7 @@ func prog(state overseer.State) {
 			zap.InfoLevel,
 		)
 		logger = zap.New(core)
-	} else if config.Environment == EnvirIsDev {
+	} else if util.Config.Environment == model.EnvirIsDev {
 		// req.Debug = true
 		logger, err = zap.NewDevelopment()
 	}
@@ -58,19 +54,19 @@ func prog(state overseer.State) {
 	defer logger.Sync()
 
 	// 输出当前版本和构建时间
-	zap.S().Infof("GitTag: %s", GitTag)
-	zap.S().Infof("BuildTime: %s", BuildTime)
+	zap.S().Infof("GitTag: %s", util.GitTag)
+	zap.S().Infof("BuildTime: %s", util.BuildTime)
 
 	// 配置数据库
 	bOpts := badger.DefaultOptions("./db/")
 	bOpts.Logger = &badgerLogger{zap.S()}
-	db, err = badger.Open(bOpts)
+	storage.BadgerDB, err = badger.Open(bOpts)
 	if err != nil {
-		zap.S().Errorf("连接数据库出错: %s", err.Error())
+		zap.L().Error("连接数据库出错", zap.Error(err))
 		return
 	}
 
-	LoadData() // 重新加载数据
+	go ws.Start(util.Config)
 
 	server := radius.PacketServer{
 		Handler:      radius.HandlerFunc(handler),
@@ -93,17 +89,17 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("读取配置文件出错: %s", err.Error()))
 	}
-	err = viper.Unmarshal(&config)
+	err = viper.Unmarshal(&util.Config)
 	if err != nil {
 		panic(fmt.Errorf("解析配置文件出错: %s", err.Error()))
 	}
 
 	var f fetcher.Interface
-	if config.Environment == EnvirIsDev {
+	if util.Config.Environment == model.EnvirIsDev {
 		f = &fetcher.File{
 			Path: "wfRadius.next",
 		}
-	} else if config.Environment == EnvirIsProd {
+	} else if util.Config.Environment == model.EnvirIsProd {
 		f = &fetcher.HTTP{
 			URL:      "http://file.atsuas.cn/wfRadius",
 			Interval: 30 * time.Minute,
