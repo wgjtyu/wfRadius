@@ -4,9 +4,11 @@
       -
         GOOS: linux
         GOARCH: arm
+        CC: arm-linux-musleabihf-gcc
       -
         GOOS: linux
         GOARCH: amd64
+        CC: x86_64-linux-musl-gcc
   tasks:
     - name: Get git rev version
       local_action: command git rev-parse --short HEAD
@@ -19,10 +21,11 @@
       environment:
         GOOS: "{{item.GOOS}}"
         GOARCH: "{{item.GOARCH}}"
-        CGO_ENABLED: 0
-      local_action: command go build -o dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}} {{LDFLAGS}}
+        CC: "{{item.CC}}"
+        CGO_LDFLAGS: "-static -w -s"
+        CGO_ENABLED: 1
+      local_action: command go build -a -o dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}} {{LDFLAGS}}
       with_items: "{{OSARCHs}}"
-        # 下一步，上传wfRadius文件去sae
     - name: Upload
       local_action: command qshell rput --overwrite georgewang wfRadius_{{item.GOOS}}_{{item.GOARCH}} dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}}
       with_items: "{{OSARCHs}}"

@@ -23,5 +23,5 @@ func LoadData(config model.MConfig) {
 	}
 	var codes []model.MWifiCode
 	resp.ToJSON(&codes)
-	util.SaveCodes(codes)
+	_ = util.SaveCodes(codes)
 }

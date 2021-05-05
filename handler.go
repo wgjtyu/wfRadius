@@ -1,15 +1,16 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	badger "github.com/dgraph-io/badger/v2"
+	"errors"
+	"wfRadius/model"
+	"wfRadius/storage"
+
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"layeh.com/radius"
 	"layeh.com/radius/rfc2865"
 	"layeh.com/radius/rfc2866"
-	"wfRadius/model"
-	"wfRadius/storage"
 )
 
 func handler(w radius.ResponseWriter, r *radius.Request) {
@@ -20,9 +21,9 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	srv := rfc2865.LoginService_Get(r.Packet)
 	srvType := rfc2865.ServiceType_Get(r.Packet)
 	callingStationID := rfc2865.CallingStationID_GetString(r.Packet) // 客户端Mac地址
-	calledStationID := rfc2865.CalledStationID_GetString(r.Packet) // AP的MAC地址
-	framedIpAddress := rfc2865.FramedIPAddress_Get(r.Packet) // 客户端的IP地址
-	acctSessionId := rfc2866.AcctSessionID_GetString(r.Packet) // 计费会话ID
+	calledStationID := rfc2865.CalledStationID_GetString(r.Packet)   // AP的MAC地址
+	framedIpAddress := rfc2865.FramedIPAddress_Get(r.Packet)         // 客户端的IP地址
+	acctSessionId := rfc2866.AcctSessionID_GetString(r.Packet)       // 计费会话ID
 
 	zap.L().Info("handler-用户请求信息", zap.String("Code", r.Code.String()),
 		zap.String("IP", ip.String()),
@@ -39,36 +40,14 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 		zap.String("RemoteAddr", r.RemoteAddr.String()))
 
 	var wifiCode model.MWifiCode
-	err := storage.BadgerDB.View(func(txn *badger.Txn) error {
-		var key bytes.Buffer
-		key.WriteString("ID")
-		key.WriteString(username)
-		item, err := txn.Get(key.Bytes())
-		if err != nil {
-			zap.L().Warn("handler-txn.Get出错", zap.String("error", err.Error()))
-			return err
-		}
-
-		var valCopy []byte
-		valCopy, err = item.ValueCopy(nil)
-		if err != nil {
-			zap.L().Warn("handler-item.ValueCopy出错", zap.String("error", err.Error()))
-			return err
-		}
-		err = json.Unmarshal(valCopy, &wifiCode)
-		if err != nil {
-			zap.L().Warn("handler-json.Unmarshal出错", zap.String("error", err.Error()))
-			return err
-		}
-
-		return nil
-	})
 	var code radius.Code
-	if err == badger.ErrKeyNotFound {
+	res := storage.DB.Find(&wifiCode, "user_id=?", username)
+	spew.Dump(wifiCode)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		code = radius.CodeAccessReject
-	} else if err != nil {
-		zap.L().Warn("handler-db获取数据出错", zap.String("error", err.Error()))
-		return
+	} else if res.Error != nil {
+		zap.L().Warn("handler-db获取数据出错", zap.Error(res.Error))
+		code = radius.CodeAccessReject
 	} else {
 		if wifiCode.Valid && wifiCode.WifiCode == password {
 			code = radius.CodeAccessAccept

@@ -1,5 +1,5 @@
 config.toml
-test.db
+main.db
 /dist/
 /db/
 /.idea/

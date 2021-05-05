@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"time"
 	"wfRadius/model"
@@ -14,7 +15,6 @@ import (
 	"github.com/jpillora/overseer/fetcher"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
-	badger "github.com/dgraph-io/badger/v2"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -31,7 +31,7 @@ func prog(state overseer.State) {
 	var logger *zap.Logger
 	if util.Config.Environment == model.EnvirIsProd {
 		w := zapcore.AddSync(&lumberjack.Logger{
-			Filename: "zaplog",
+			Filename: os.Args[1] + "/zaplog",
 			MaxSize:  10, // megabytes
 		})
 		cfg := zap.NewProductionEncoderConfig()
@@ -57,13 +57,7 @@ func prog(state overseer.State) {
 	zap.S().Infof("BuildTime: %s", util.BuildTime)
 
 	// 配置数据库
-	bOpts := badger.DefaultOptions("./db/")
-	bOpts.Logger = &badgerLogger{zap.S()}
-	storage.BadgerDB, err = badger.Open(bOpts)
-	if err != nil {
-		zap.L().Error("连接数据库出错", zap.Error(err))
-		return
-	}
+	storage.Init()
 
 	go ws.Start(util.Config)
 
@@ -82,8 +76,9 @@ func prog(state overseer.State) {
 func main() {
 	var err error
 
+	// viper.SetConfigFile(os.Args[2])
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(os.Args[1])
 	err = viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("读取配置文件出错: %s", err.Error()))
