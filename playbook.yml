@@ -1,5 +1,12 @@
 - hosts: localhost
-# - hosts: dps_seafile
+  vars:
+    OSARCHs:
+      -
+        GOOS: linux
+        GOARCH: arm
+      -
+        GOOS: linux
+        GOARCH: amd64
   tasks:
     - name: Get git rev version
       local_action: command git rev-parse --short HEAD
@@ -10,12 +17,14 @@
         - GIT_TAG: "{{GIT_COMMIT_ID.stdout}}"
         - LDFLAGS: -ldflags "-X 'wfRadius/util.GitTag={{GIT_TAG}}' -X 'wfRadius/util.BuildTime={{BUILD_TIME}}'"
       environment:
+        GOOS: "{{item.GOOS}}"
+        GOARCH: "{{item.GOARCH}}"
         CGO_ENABLED: 0
-        GOOS: linux
-        GOARCH: amd64
-      local_action: command go build -o dist/ -i {{LDFLAGS}}
+      local_action: command go build -o dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}} {{LDFLAGS}}
+      with_items: "{{OSARCHs}}"
         # 下一步，上传wfRadius文件去sae
     - name: Upload
-      local_action: command qshell rput --overwrite georgewang wfRadius dist/wfRadius
+      local_action: command qshell rput --overwrite georgewang wfRadius_{{item.GOOS}}_{{item.GOARCH}} dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}}
+      with_items: "{{OSARCHs}}"
     - name: Refresh CDN
       local_action: command qshell cdnrefresh -i qiniu_file_list

@@ -8,7 +8,6 @@ import (
 	"wfRadius/util"
 )
 
-
 // msgPack 服务器发来消息的包结构
 type msgPack struct {
 	Tag    string      `json:"tag"`

@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/imroc/req"
@@ -51,6 +52,8 @@ func Proceed(msg CommandMessage) {
 			return
 		}
 		putResult(msg.CommandID, &map[string]interface{}{"status": "ok"})
+	} else if inMsg.Name == "REBOOT" {
+		os.Exit(1)
 	} else {
 		putResult(msg.CommandID, &map[string]interface{}{"error": "unknown command"})
 	}

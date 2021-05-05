@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"runtime"
 	"time"
 	"wfRadius/model"
 	"wfRadius/storage"
@@ -19,8 +20,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"layeh.com/radius"
 )
-
-
 
 /*
 TODO 将用户登录记录发回线上系统
@@ -101,7 +100,7 @@ func main() {
 		}
 	} else if util.Config.Environment == model.EnvirIsProd {
 		f = &fetcher.HTTP{
-			URL:      "http://file.atsuas.cn/wfRadius",
+			URL:      fmt.Sprintf("http://file.atsuas.cn/wfRadius_%s_%s", runtime.GOOS, runtime.GOARCH),
 			Interval: 30 * time.Minute,
 		}
 	}
