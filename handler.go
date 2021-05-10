@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
+	"time"
 	"wfRadius/model"
 	"wfRadius/storage"
 
-	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"layeh.com/radius"
@@ -42,7 +42,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	var wifiCode model.MWifiCode
 	var code radius.Code
 	res := storage.DB.Find(&wifiCode, "user_id=?", username)
-	spew.Dump(wifiCode)
+	// spew.Dump(wifiCode)
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		code = radius.CodeAccessReject
 	} else if res.Error != nil {
@@ -51,6 +51,11 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	} else {
 		if wifiCode.Valid && wifiCode.WifiCode == password {
 			code = radius.CodeAccessAccept
+			var log model.MWifiLog
+			log.UserID = wifiCode.UserID
+			log.Time = time.Now()
+			log.MacAddr = callingStationID
+			storage.DB.Create(&log)
 			// } else if srvType == 0 {
 			// fmt.Printf("srvType==0\n")
 			// code = radius.CodeAccessAccept

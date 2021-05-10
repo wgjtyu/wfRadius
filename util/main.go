@@ -5,6 +5,7 @@ import (
 	"wfRadius/storage"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm/clause"
 )
 
 func SaveCodes(codes []model.MWifiCode) error {
@@ -13,11 +14,11 @@ func SaveCodes(codes []model.MWifiCode) error {
 	}
 	tx := storage.Begin()
 	for _, code := range codes {
-		res := tx.Create(&code)
+		res := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(&code)
 		if res.Error != nil {
 			zap.L().Warn("数据库创建WifiCode数据出错", zap.Error(res.Error))
-			// tx.Rollback()
-			// return res.Error
 		}
 	}
 	tx.Commit()

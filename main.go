@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"time"
 	"wfRadius/model"
+	"wfRadius/src/request"
+	"wfRadius/src/wifilog"
 	"wfRadius/storage"
 	"wfRadius/util"
 	"wfRadius/ws"
@@ -58,7 +60,10 @@ func prog(state overseer.State) {
 
 	// 配置数据库
 	storage.Init()
+	// 配置Http请求
+	request.Init(util.Config.Token, util.Config.HTTPBackend)
 
+	go wifilog.BeginUploadTask()
 	go ws.Start(util.Config)
 
 	server := radius.PacketServer{

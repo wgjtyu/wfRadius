@@ -21,9 +21,9 @@ func Begin() *gorm.DB {
 func Init() {
 	var err error
 	DB, err = gorm.Open(sqlite.Open(os.Args[1] + "/main.db"))
-	// DB, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"))
 	if err != nil {
 		panic(fmt.Errorf("初始化数据库出错: %s", err.Error()))
 	}
 	DB.AutoMigrate(&model.MWifiCode{})
+	DB.AutoMigrate(&model.MWifiLog{})
 }
