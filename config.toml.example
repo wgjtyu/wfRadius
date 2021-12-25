@@ -1,0 +1,8 @@
+environment = ""
+http_backend = ""
+name = ""
+token = ""
+ws_backend = ""
+LogBackend = ""
+LogProjectId = 0
+LogKey = ""

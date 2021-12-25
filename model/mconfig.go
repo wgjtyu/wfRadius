@@ -17,4 +17,8 @@ type MConfig struct {
 	WSBackend   string `mapstructure:"ws_backend"`
 	Token       string
 	Environment ENVTYPE
+
+	LogBackend   string
+	LogProjectID uint
+	LogKey       string
 }

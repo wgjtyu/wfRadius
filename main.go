@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/wgjtyu/logMansion/lib"
 	"log"
 	"os"
 	"runtime"
@@ -33,8 +34,9 @@ func prog(state overseer.State) {
 	var logger *zap.Logger
 	if util.Config.Environment == model.EnvirIsProd {
 		w := zapcore.AddSync(&lumberjack.Logger{
-			Filename: os.Args[1] + "/zaplog",
-			MaxSize:  10, // megabytes
+			Filename:   os.Args[1] + "/zaplog",
+			MaxSize:    2, // megabytes
+			MaxBackups: 5,
 		})
 		cfg := zap.NewProductionEncoderConfig()
 		cfg.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -44,6 +46,11 @@ func prog(state overseer.State) {
 			zap.InfoLevel,
 		)
 		logger = zap.New(core)
+		lmCore := lib.NewCore(util.Config.LogBackend, util.Config.LogProjectID,
+			util.Config.LogKey, zapcore.InfoLevel)
+		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+			return zapcore.NewTee(c, lmCore)
+		}))
 	} else if util.Config.Environment == model.EnvirIsDev {
 		logger, err = zap.NewDevelopment()
 	}
