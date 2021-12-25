@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	pingPeriod = 60 * time.Second
-	writeWait = 30 * time.Second
+	pingPeriod = 30 * time.Second
+	writeWait  = 30 * time.Second
 )
 
 func Start(config model.MConfig) {
@@ -35,7 +35,7 @@ func Start(config model.MConfig) {
 		}
 		LoadData(config)
 		start(c, ch)
-		_, ok := <- ch
+		_, ok := <-ch
 		if ok {
 			c.Close()
 		}
@@ -60,5 +60,4 @@ func start(c *websocket.Conn, ch chan bool) {
 	if err != nil {
 		zap.S().Errorf("LoadData-订阅更新WifiCode事件出错: %s", err.Error())
 	}
-
 }

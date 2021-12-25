@@ -33,7 +33,7 @@ func uploadLog() {
 }
 
 func BeginUploadTask() {
-	d := time.Duration(time.Second * 300)
+	d := time.Second * 300
 
 	t := time.NewTicker(d)
 	defer t.Stop()

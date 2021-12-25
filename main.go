@@ -45,7 +45,6 @@ func prog(state overseer.State) {
 		)
 		logger = zap.New(core)
 	} else if util.Config.Environment == model.EnvirIsDev {
-		// req.Debug = true
 		logger, err = zap.NewDevelopment()
 	}
 	if err != nil {
@@ -81,7 +80,6 @@ func prog(state overseer.State) {
 func main() {
 	var err error
 
-	// viper.SetConfigFile(os.Args[2])
 	viper.SetConfigName("config")
 	viper.AddConfigPath(os.Args[1])
 	err = viper.ReadInConfig()

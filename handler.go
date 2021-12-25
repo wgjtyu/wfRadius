@@ -42,7 +42,6 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	var wifiCode model.MWifiCode
 	var code radius.Code
 	res := storage.DB.Find(&wifiCode, "user_id=?", username)
-	// spew.Dump(wifiCode)
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		code = radius.CodeAccessReject
 	} else if res.Error != nil {
