@@ -78,7 +78,7 @@ func putResult(commandID uint64, result *map[string]interface{}) {
 		"content":   string(content),
 	}
 
-	r := req.New()
+	r := req.New() // FIXME 用src/request下的方法
 	resp, err := r.Post(config.Instance.HTTPBackend+"/api/device/command_result_upload", cookie, req.BodyJSON(&body))
 	if err != nil {
 		zap.L().Error("上传指令结果, 本地出错", zap.String("error", err.Error()))

@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"os"
+	"time"
 	"wfRadius/model"
 )
 
@@ -21,6 +22,10 @@ func InitCfg() {
 	err = viper.Unmarshal(&Instance)
 	if err != nil {
 		panic(fmt.Errorf("解析配置文件出错: %s", err.Error()))
+	}
+
+	if Instance.PingPeriod == 0 { // 默认心跳间隔为60秒
+		Instance.PingPeriod = 60 * time.Second
 	}
 }
 

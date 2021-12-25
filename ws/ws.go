@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	pingPeriod = 30 * time.Second
-	writeWait  = 30 * time.Second
+	writeWait = 30 * time.Second
 )
 
 func Start(config model.MConfig) {
@@ -24,9 +23,14 @@ func Start(config model.MConfig) {
 	}
 
 	url := config.WSBackend + "/api/ws"
-	ch := make(chan bool, 0)
-	defer close(ch)
+	reconnectCh := make(chan bool, 0)
+	defer close(reconnectCh)
+
+	stopPingCh := make(chan bool, 0)
+	defer close(stopPingCh)
+
 	for {
+		time.Sleep(5 * time.Second) // 睡眠5秒，以便c.Close对startPing产生作用
 		c, _, err := websocket.DefaultDialer.Dial(url, header)
 		if err != nil {
 			zap.L().Error("ws.Start-连接ws服务出错", zap.Error(err))
@@ -34,17 +38,21 @@ func Start(config model.MConfig) {
 			continue
 		}
 		LoadData(config)
-		start(c, ch)
-		_, ok := <-ch
-		if ok {
+		start(c, reconnectCh, stopPingCh)
+
+		select {
+		case <-reconnectCh:
+			zap.L().Info("ws.Start-将于5s后重新连接")
+			stopPingCh <- true
+			updatePeriod(false)
 			c.Close()
 		}
 	}
 }
 
-func start(c *websocket.Conn, ch chan bool) {
-	go startPing(c)
-	go reader(c, ch)
+func start(c *websocket.Conn, reconnectCh chan bool, stopPingCh chan bool) {
+	go startPing(c, stopPingCh)
+	go reader(c, reconnectCh)
 	// 订阅WifiCode的添加和更新事件
 	err := c.WriteJSON(map[string]interface{}{
 		"type":   0, // 订阅

@@ -14,11 +14,11 @@ type msgPack struct {
 	RawMsg interface{} `json:"rawMsg"`
 }
 
-func reader(c *websocket.Conn, ch chan bool) {
-	zap.S().Debugf("reader: 启动")
+func reader(c *websocket.Conn, reconnectCh chan bool) {
+	zap.L().Info("reader: 启动")
 	defer func() {
-		zap.S().Debugf("reader: 关闭")
-		ch <- true
+		zap.L().Info("reader: 关闭")
+		reconnectCh <- true
 	}()
 	for {
 		var result msgPack
@@ -43,4 +43,3 @@ func reader(c *websocket.Conn, ch chan bool) {
 		}
 	}
 }
-
