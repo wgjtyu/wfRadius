@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // ENVTYPE 运行环境类型
 type ENVTYPE uint32
 
@@ -21,4 +23,6 @@ type MConfig struct {
 	LogBackend   string
 	LogProjectID uint
 	LogKey       string
+
+	PingPeriod time.Duration // 心跳间隔(毫秒)
 }

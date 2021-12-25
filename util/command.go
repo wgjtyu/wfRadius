@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"wfRadius/config"
 
 	"github.com/imroc/req"
 	"github.com/mitchellh/mapstructure"
@@ -35,7 +36,7 @@ func Proceed(msg CommandMessage) {
 			"BuildTime": BuildTime})
 	} else if inMsg.Name == "GET_CONFIG" {
 		var mapObj map[string]interface{}
-		err := mapstructure.Decode(Config, &mapObj)
+		err := mapstructure.Decode(config.Instance, &mapObj)
 		if err != nil {
 			zap.L().Warn("Proceed-转换config出错", zap.Error(err))
 			return
@@ -64,7 +65,7 @@ func putResult(commandID uint64, result *map[string]interface{}) {
 	time.Sleep(5 * time.Second)
 	cookie := new(http.Cookie)
 	cookie.Name = "token"
-	cookie.Value = Config.Token
+	cookie.Value = config.Instance.Token
 
 	content, err := json.Marshal(result)
 	if err != nil {
@@ -78,7 +79,7 @@ func putResult(commandID uint64, result *map[string]interface{}) {
 	}
 
 	r := req.New()
-	resp, err := r.Post(Config.HTTPBackend+"/api/device/command_result_upload", cookie, req.BodyJSON(&body))
+	resp, err := r.Post(config.Instance.HTTPBackend+"/api/device/command_result_upload", cookie, req.BodyJSON(&body))
 	if err != nil {
 		zap.L().Error("上传指令结果, 本地出错", zap.String("error", err.Error()))
 		return

@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"time"
+	"wfRadius/config"
 	"wfRadius/model"
 	"wfRadius/src/request"
 	"wfRadius/src/wifilog"
@@ -18,7 +19,6 @@ import (
 	"github.com/jpillora/overseer/fetcher"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"layeh.com/radius"
@@ -32,7 +32,7 @@ func prog(state overseer.State) {
 
 	// 配置日志模块
 	var logger *zap.Logger
-	if util.Config.Environment == model.EnvirIsProd {
+	if config.Instance.Environment == model.EnvirIsProd {
 		w := zapcore.AddSync(&lumberjack.Logger{
 			Filename:   os.Args[1] + "/zaplog",
 			MaxSize:    2, // megabytes
@@ -46,12 +46,12 @@ func prog(state overseer.State) {
 			zap.InfoLevel,
 		)
 		logger = zap.New(core)
-		lmCore := lib.NewCore(util.Config.LogBackend, util.Config.LogProjectID,
-			util.Config.LogKey, zapcore.InfoLevel)
+		lmCore := lib.NewCore(config.Instance.LogBackend, config.Instance.LogProjectID,
+			config.Instance.LogKey, zapcore.InfoLevel)
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			return zapcore.NewTee(c, lmCore)
 		}))
-	} else if util.Config.Environment == model.EnvirIsDev {
+	} else if config.Instance.Environment == model.EnvirIsDev {
 		logger, err = zap.NewDevelopment()
 	}
 	if err != nil {
@@ -61,23 +61,25 @@ func prog(state overseer.State) {
 	defer logger.Sync()
 
 	// 输出当前版本和构建时间
-	zap.S().Infof("GitTag: %s", util.GitTag)
-	zap.S().Infof("BuildTime: %s", util.BuildTime)
+	zap.L().Info("Start",
+		zap.String("GOOS", runtime.GOOS),
+		zap.String("GOARCH", runtime.GOARCH),
+		zap.String("GitTag", util.GitTag),
+		zap.String("BuildTime", util.BuildTime))
 
 	// 配置数据库
 	storage.Init()
 	// 配置Http请求
-	request.Init(util.Config.Token, util.Config.HTTPBackend)
+	request.Init(config.Instance.Token, config.Instance.HTTPBackend)
 
 	go wifilog.BeginUploadTask()
-	go ws.Start(util.Config)
+	go ws.Start(config.Instance)
 
 	server := radius.PacketServer{
 		Handler:      radius.HandlerFunc(handler),
 		SecretSource: radius.StaticSecretSource([]byte(`secret`)),
 	}
 
-	zap.L().Info("Starting server on :1812")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
@@ -85,25 +87,14 @@ func prog(state overseer.State) {
 }
 
 func main() {
-	var err error
-
-	viper.SetConfigName("config")
-	viper.AddConfigPath(os.Args[1])
-	err = viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("读取配置文件出错: %s", err.Error()))
-	}
-	err = viper.Unmarshal(&util.Config)
-	if err != nil {
-		panic(fmt.Errorf("解析配置文件出错: %s", err.Error()))
-	}
+	config.InitCfg()
 
 	var f fetcher.Interface
-	if util.Config.Environment == model.EnvirIsDev {
+	if config.Instance.Environment == model.EnvirIsDev {
 		f = &fetcher.File{
 			Path: "wfRadius.next",
 		}
-	} else if util.Config.Environment == model.EnvirIsProd {
+	} else if config.Instance.Environment == model.EnvirIsProd {
 		f = &fetcher.HTTP{
 			URL:      fmt.Sprintf("http://file.atsuas.cn/wfRadius_%s_%s", runtime.GOOS, runtime.GOARCH),
 			Interval: 30 * time.Minute,
