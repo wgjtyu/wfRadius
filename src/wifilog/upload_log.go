@@ -27,7 +27,10 @@ func uploadLog() {
 			for _, l := range logs {
 				ids = append(ids, l.ID)
 			}
-			storage.DB.Delete(&model.MWifiLog{}, ids)
+			err = storage.DB.Delete(&model.MWifiLog{}, ids).Error
+			if err != nil {
+				zap.L().Error("删除wifiLog出错", zap.Error(err))
+			}
 		}
 	}
 }

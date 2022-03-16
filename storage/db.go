@@ -24,6 +24,6 @@ func Init() {
 	if err != nil {
 		panic(fmt.Errorf("初始化数据库出错: %s", err.Error()))
 	}
-	DB.AutoMigrate(&model.MWifiCode{})
-	DB.AutoMigrate(&model.MWifiLog{})
+	_ = DB.AutoMigrate(&model.MWifiCode{})
+	_ = DB.AutoMigrate(&model.MWifiLog{})
 }

@@ -31,7 +31,8 @@ func Start(config model.MConfig) {
 
 	for {
 		time.Sleep(5 * time.Second) // 睡眠5秒，以便c.Close对startPing产生作用
-		c, _, err := websocket.DefaultDialer.Dial(url, header)
+		c, resp, err := websocket.DefaultDialer.Dial(url, header)
+		zap.L().Info("websocket dial", zap.Int("status", resp.StatusCode))
 		if err != nil {
 			zap.L().Error("ws.Start-连接ws服务出错", zap.Error(err))
 			time.Sleep(5 * time.Second)

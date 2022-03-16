@@ -54,7 +54,10 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 			log.UserID = wifiCode.UserID
 			log.Time = time.Now()
 			log.MacAddr = callingStationID
-			storage.DB.Create(&log)
+			err := storage.DB.Create(&log).Error
+			if err != nil {
+				zap.L().Error("创建log出错", zap.Error(err))
+			}
 			// } else if srvType == 0 {
 			// fmt.Printf("srvType==0\n")
 			// code = radius.CodeAccessAccept
