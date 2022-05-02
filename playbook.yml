@@ -27,7 +27,7 @@
       local_action: command go build -a -o dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}} {{LDFLAGS}}
       with_items: "{{OSARCHs}}"
     - name: Upload
-      local_action: command qshell rput --overwrite georgewang wfRadius_{{item.GOOS}}_{{item.GOARCH}} dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}}
+      local_action: command curl https://afile.atsuas.cn/api/file/upload -F "file=@dist/wfRadius_{{item.GOOS}}_{{item.GOARCH}}"
       with_items: "{{OSARCHs}}"
-    - name: Refresh CDN
-      local_action: command qshell cdnrefresh -i qiniu_file_list
+    - name: Say done
+      local_action: command say done

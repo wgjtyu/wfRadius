@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"time"
 	"wfRadius/config"
 	"wfRadius/model"
 	"wfRadius/src/request"
@@ -96,8 +95,7 @@ func main() {
 		}
 	} else if config.Instance.Environment == model.EnvirIsProd {
 		f = &fetcher.HTTP{
-			URL:      fmt.Sprintf("http://file.atsuas.cn/wfRadius_%s_%s", runtime.GOOS, runtime.GOARCH),
-			Interval: 30 * time.Minute,
+			URL: fmt.Sprintf("https://afile.atsuas.cn/file/wfRadius_%s_%s", runtime.GOOS, runtime.GOARCH),
 		}
 	}
 	overseer.Run(overseer.Config{
