@@ -8,6 +8,7 @@ require (
 	github.com/jpillora/overseer v1.1.6
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/spf13/viper v1.9.0
+	github.com/wgjtyu/goutil v0.0.0-00010101000000-000000000000
 	github.com/wgjtyu/logMansion v0.0.0-00010101000000-000000000000
 	go.uber.org/zap v1.19.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -17,3 +18,5 @@ require (
 )
 
 replace github.com/wgjtyu/logMansion => ../logMansion
+
+replace github.com/wgjtyu/goutil => ../goutil

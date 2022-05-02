@@ -16,6 +16,7 @@ import (
 
 	"github.com/jpillora/overseer"
 	"github.com/jpillora/overseer/fetcher"
+	"github.com/wgjtyu/goutil/overseer_fetcher"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	"go.uber.org/zap"
@@ -23,9 +24,6 @@ import (
 	"layeh.com/radius"
 )
 
-/*
-TODO 将用户登录记录发回线上系统
-*/
 func prog(state overseer.State) {
 	var err error
 
@@ -94,8 +92,9 @@ func main() {
 			Path: "wfRadius.next",
 		}
 	} else if config.Instance.Environment == model.EnvirIsProd {
-		f = &fetcher.HTTP{
-			URL: fmt.Sprintf("https://afile.atsuas.cn/file/wfRadius_%s_%s", runtime.GOOS, runtime.GOARCH),
+		f = &overseerfetcher.HttpFetcher{
+			URL:           fmt.Sprintf("https://afile.atsuas.cn/file/wfRadius_%s_%s", runtime.GOOS, runtime.GOARCH),
+			WorkDirectory: os.Args[1],
 		}
 	}
 	overseer.Run(overseer.Config{
