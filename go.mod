@@ -15,6 +15,7 @@ require (
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.16
 	layeh.com/radius v0.0.0-20201203135236-838e26d0c9be
+	moul.io/zapgorm2 v1.1.0
 )
 
 replace github.com/wgjtyu/logMansion => ../logMansion
