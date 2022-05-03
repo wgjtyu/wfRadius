@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"time"
-	"wfRadius/config"
+	"wfRadius/src/root/startup"
 )
 
 var lastSuccessPeriod time.Duration
@@ -12,40 +12,40 @@ var lastSuccessPeriod time.Duration
 // 更新心跳间隔
 func updatePeriod(success bool) {
 	if lastSuccessPeriod == 0 {
-		lastSuccessPeriod = config.Instance.PingPeriod * 2
+		lastSuccessPeriod = startup.Instance.PingPeriod * 2
 	}
 
-	if success && config.Instance.PingPeriod == lastSuccessPeriod {
+	if success && startup.Instance.PingPeriod == lastSuccessPeriod {
 		return
 	}
 
-	lastPeriod := config.Instance.PingPeriod
+	lastPeriod := startup.Instance.PingPeriod
 	zap.L().Info("更新心跳间隔",
 		zap.Bool("success", success),
-		zap.Duration("pingPeriod", config.Instance.PingPeriod),
+		zap.Duration("pingPeriod", startup.Instance.PingPeriod),
 		zap.Duration("lastSuccessPeriod", lastSuccessPeriod))
 
-	if success && config.Instance.PingPeriod != lastSuccessPeriod {
-		lastSuccessPeriod = config.Instance.PingPeriod
-		config.Instance.PingPeriod += config.Instance.PingPeriod / 10
+	if success && startup.Instance.PingPeriod != lastSuccessPeriod {
+		lastSuccessPeriod = startup.Instance.PingPeriod
+		startup.Instance.PingPeriod += startup.Instance.PingPeriod / 10
 	} else {
-		if config.Instance.PingPeriod > lastSuccessPeriod {
+		if startup.Instance.PingPeriod > lastSuccessPeriod {
 			zap.L().Info("似乎找到最佳心跳间隔")
-			config.Instance.PingPeriod = lastSuccessPeriod
+			startup.Instance.PingPeriod = lastSuccessPeriod
 		} else {
-			config.Instance.PingPeriod /= 2
+			startup.Instance.PingPeriod /= 2
 		}
 	}
 
-	if config.Instance.PingPeriod != lastPeriod {
-		config.SetPingPeriod()
+	if startup.Instance.PingPeriod != lastPeriod {
+		startup.SetPingPeriod()
 	}
-	zap.L().Info("下次心跳间隔", zap.Duration("pingPeriod", config.Instance.PingPeriod))
+	zap.L().Info("下次心跳间隔", zap.Duration("pingPeriod", startup.Instance.PingPeriod))
 }
 
 func startPing(conn *websocket.Conn, stopPingCh <-chan bool) {
-	zap.L().Info("startPing begin", zap.Duration("pingPeriod", config.Instance.PingPeriod))
-	ticker := time.NewTicker(config.Instance.PingPeriod)
+	zap.L().Info("startPing begin", zap.Duration("pingPeriod", startup.Instance.PingPeriod))
+	ticker := time.NewTicker(startup.Instance.PingPeriod)
 
 	for {
 		select {
@@ -57,7 +57,7 @@ func startPing(conn *websocket.Conn, stopPingCh <-chan bool) {
 			} else {
 				updatePeriod(true)
 			}
-			ticker.Reset(config.Instance.PingPeriod)
+			ticker.Reset(startup.Instance.PingPeriod)
 		case <-stopPingCh:
 			zap.L().Info("执行stopPing")
 			ticker.Stop()

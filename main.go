@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"wfRadius/config"
-	"wfRadius/model"
+	"wfRadius/src/config"
 	"wfRadius/src/request"
+	"wfRadius/src/root/startup"
 	"wfRadius/src/wifilog"
 	"wfRadius/storage"
 	"wfRadius/util"
@@ -29,7 +29,7 @@ func prog(state overseer.State) {
 
 	// 配置日志模块
 	var logger *zap.Logger
-	if config.Instance.Environment == model.EnvirIsProd {
+	if startup.Instance.Environment == config.EnvirIsProd {
 		w := zapcore.AddSync(&lumberjack.Logger{
 			Filename:   os.Args[1] + "/zaplog",
 			MaxSize:    2, // megabytes
@@ -43,12 +43,12 @@ func prog(state overseer.State) {
 			zap.InfoLevel,
 		)
 		logger = zap.New(core)
-		lmCore := lib.NewCore(config.Instance.LogBackend, config.Instance.LogProjectID,
-			config.Instance.LogKey, zapcore.InfoLevel)
+		lmCore := lib.NewCore(startup.Instance.LogBackend, startup.Instance.LogProjectID,
+			startup.Instance.LogKey, zapcore.InfoLevel)
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			return zapcore.NewTee(c, lmCore)
 		}))
-	} else if config.Instance.Environment == model.EnvirIsDev {
+	} else if startup.Instance.Environment == config.EnvirIsDev {
 		logger, err = zap.NewDevelopment()
 	}
 	if err != nil {
@@ -67,10 +67,10 @@ func prog(state overseer.State) {
 	// 配置数据库
 	storage.Init()
 	// 配置Http请求
-	request.Init(config.Instance.Token, config.Instance.HTTPBackend)
+	request.Init(startup.Instance.Token, startup.Instance.HTTPBackend)
 
 	go wifilog.BeginUploadTask()
-	go ws.Start(config.Instance)
+	go ws.Start(startup.Instance)
 
 	server := radius.PacketServer{
 		Handler:      radius.HandlerFunc(handler),
@@ -84,14 +84,14 @@ func prog(state overseer.State) {
 }
 
 func main() {
-	config.InitCfg()
+	cfg := startup.InitCfg()
 
 	var f fetcher.Interface
-	if config.Instance.Environment == model.EnvirIsDev {
+	if cfg.Environment == config.EnvirIsDev {
 		f = &fetcher.File{
 			Path: "wfRadius.next",
 		}
-	} else if config.Instance.Environment == model.EnvirIsProd {
+	} else if cfg.Environment == config.EnvirIsProd {
 		f = &overseerfetcher.HttpFetcher{
 			URL:           fmt.Sprintf("https://afile.atsuas.cn/file/wfRadius_%s_%s", runtime.GOOS, runtime.GOARCH),
 			WorkDirectory: os.Args[1],

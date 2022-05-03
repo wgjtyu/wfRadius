@@ -6,12 +6,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
-	"wfRadius/model"
+	"wfRadius/src/config"
 )
 
-func NewZap(cfg *model.MConfig) *zap.Logger {
+func NewZap(cfg *config.MConfig) *zap.Logger {
 	var zlogger *zap.Logger
-	if cfg.Environment == model.EnvirIsProd {
+	if cfg.Environment == config.EnvirIsProd {
 		w := zapcore.AddSync(&lumberjack.Logger{
 			Filename:   os.Args[1] + "/zaplog",
 			MaxSize:    2, // megabytes
