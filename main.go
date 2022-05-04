@@ -2,59 +2,27 @@ package main
 
 import (
 	"fmt"
-	"github.com/wgjtyu/logMansion/lib"
-	"log"
-	"os"
-	"runtime"
-	"wfRadius/src/config"
-	"wfRadius/src/request"
-	"wfRadius/src/root/startup"
-	"wfRadius/src/wifilog"
-	"wfRadius/util"
-	"wfRadius/ws"
-
 	"github.com/jpillora/overseer"
 	"github.com/jpillora/overseer/fetcher"
 	"github.com/wgjtyu/goutil/overseer_fetcher"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
-
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"layeh.com/radius"
+	"math/rand"
+	"os"
+	"runtime"
+	"time"
+	"wfRadius/src/config"
+	"wfRadius/src/request"
+	"wfRadius/src/root/startup"
+	"wfRadius/util"
 )
 
 func prog(state overseer.State) {
-	var err error
-
-	// 配置日志模块
-	var logger *zap.Logger
-	if startup.Instance.Environment == config.EnvirIsProd {
-		w := zapcore.AddSync(&lumberjack.Logger{
-			Filename:   os.Args[1] + "/zaplog",
-			MaxSize:    2, // megabytes
-			MaxBackups: 5,
-		})
-		cfg := zap.NewProductionEncoderConfig()
-		cfg.EncodeTime = zapcore.ISO8601TimeEncoder
-		core := zapcore.NewCore(
-			zapcore.NewJSONEncoder(cfg),
-			w,
-			zap.InfoLevel,
-		)
-		logger = zap.New(core)
-		lmCore := lib.NewCore(startup.Instance.LogBackend, startup.Instance.LogProjectID,
-			startup.Instance.LogKey, zapcore.InfoLevel)
-		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			return zapcore.NewTee(c, lmCore)
-		}))
-	} else if startup.Instance.Environment == config.EnvirIsDev {
-		logger, err = zap.NewDevelopment()
-	}
+	rand.Seed(time.Now().UnixNano())
+	app, err := BuildApp()
 	if err != nil {
-		panic(fmt.Sprintf("创建日志模块出错: %s\n", err.Error()))
+		zap.L().Error("启动出错", zap.Error(err))
+		os.Exit(-1)
 	}
-	zap.ReplaceGlobals(logger)
-	defer logger.Sync()
 
 	// 输出当前版本和构建时间
 	zap.L().Info("Start",
@@ -65,19 +33,8 @@ func prog(state overseer.State) {
 
 	// 配置Http请求
 	request.Init(startup.Instance.Token, startup.Instance.HTTPBackend)
-
-	go wifilog.BeginUploadTask()
-	go ws.Start(startup.Instance)
-
-	server := radius.PacketServer{
-		Handler:      radius.HandlerFunc(handler),
-		SecretSource: radius.StaticSecretSource([]byte(`secret`)),
-	}
-
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("退出程序")
+	app.Run() // 在shutdown之前，会停在这里
+	app.WaitForEnd()
 }
 
 func main() {
