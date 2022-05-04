@@ -10,7 +10,6 @@ import (
 	"wfRadius/src/request"
 	"wfRadius/src/root/startup"
 	"wfRadius/src/wifilog"
-	"wfRadius/storage"
 	"wfRadius/util"
 	"wfRadius/ws"
 
@@ -64,8 +63,6 @@ func prog(state overseer.State) {
 		zap.String("GitTag", util.GitTag),
 		zap.String("BuildTime", util.BuildTime))
 
-	// 配置数据库
-	storage.Init()
 	// 配置Http请求
 	request.Init(startup.Instance.Token, startup.Instance.HTTPBackend)
 
