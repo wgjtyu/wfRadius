@@ -52,9 +52,7 @@ func main() {
 		}
 	}
 	overseer.Run(overseer.Config{
-		Program:   prog,
-		NoRestart: true,
-		Address:   ":1812",
-		Fetcher:   f,
+		Program: prog,
+		Fetcher: f,
 	})
 }

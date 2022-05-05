@@ -43,7 +43,14 @@ func (a *App) Shutdown() {
 	a.wg.Add(1)
 	defer a.wg.Done()
 
-	//a.Manager.Shutdown() // 关闭所有视频流
+	a.Worker.Shutdown()
+	err := a.RServer.Shutdown()
+	if err != nil {
+		a.Logger.Error("RServer.Shutdown()出错", zap.Error(err))
+	}
+	a.Uploader.Shutdown()
+
+	a.Logger.Debug("Shutdown结束")
 }
 
 func (a *App) WaitForEnd() {

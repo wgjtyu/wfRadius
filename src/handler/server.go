@@ -5,7 +5,6 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"layeh.com/radius"
-	"log"
 )
 
 type RadiusServer struct {
@@ -27,8 +26,11 @@ func (rs *RadiusServer) Serve() {
 		SecretSource: radius.StaticSecretSource([]byte(`secret`)),
 	}
 
-	if err := rs.server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+	err := rs.server.ListenAndServe()
+	if err != nil {
+		rs.logger.Error("Serve出错", zap.Error(err))
+	} else {
+		rs.logger.Debug("Server结束")
 	}
 }
 

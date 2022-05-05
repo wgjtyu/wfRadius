@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"github.com/google/wire"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -21,14 +22,17 @@ var Set = wire.NewSet(
 
 type Worker struct {
 	reconnectCh chan bool
+	quitCh      chan bool
 	cfg         *config.MConfig
 	db          *gorm.DB
+	wg          sync.WaitGroup
 	logger      *zap.Logger
 }
 
 func NewWorker(c *config.MConfig, l *zap.Logger, db *gorm.DB) *Worker {
 	return &Worker{
 		reconnectCh: make(chan bool, 1), // 避免执行优雅退出时，reader结束时发生阻塞
+		quitCh:      make(chan bool),
 		cfg:         c,
 		db:          db,
 		logger:      l.Named("ws.Worker"),
@@ -50,8 +54,7 @@ func (w *Worker) Start(wg *sync.WaitGroup) {
 	reconnectCh := make(chan bool, 0)
 	defer close(reconnectCh)
 
-	stopPingCh := make(chan bool, 0)
-	defer close(stopPingCh)
+	pingCtx, stopPing := context.WithCancel(context.Background())
 
 	for {
 		time.Sleep(5 * time.Second) // 睡眠5秒，以便c.Close对startPing产生作用
@@ -63,21 +66,34 @@ func (w *Worker) Start(wg *sync.WaitGroup) {
 			continue
 		}
 		w.LoadData()
-		w.start(c, reconnectCh, stopPingCh)
+		w.start(c, pingCtx)
 
 		select {
+		case <-w.quitCh: // 退出程序
+			w.logger.Info("Start-退出程序")
+			stopPing()
+			c.Close()
+			return // 这里如果用break，会跳出select，不会跳出for循环，所以用return
 		case <-reconnectCh:
 			zap.L().Info("ws.Start-将于5s后重新连接")
-			stopPingCh <- true
+			stopPing()
 			updatePeriod(false)
 			c.Close()
 		}
 	}
 }
 
-func (w *Worker) start(c *websocket.Conn, reconnectCh chan bool, stopPingCh chan bool) {
-	go w.startPing(c, stopPingCh)
-	go w.reader(c, reconnectCh)
+func (w *Worker) Shutdown() {
+	w.logger.Debug("Shutdown begin")
+	w.quitCh <- true
+	close(w.quitCh)
+	w.wg.Wait()
+	w.logger.Debug("Shutdown end")
+}
+
+func (w *Worker) start(c *websocket.Conn, pingCtx context.Context) {
+	go w.startPing(c, pingCtx)
+	go w.reader(c)
 	// 订阅WifiCode的添加和更新事件
 	err := c.WriteJSON(map[string]interface{}{
 		"type":   0, // 订阅

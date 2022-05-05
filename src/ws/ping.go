@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"time"
@@ -43,7 +44,9 @@ func updatePeriod(success bool) {
 	zap.L().Info("下次心跳间隔", zap.Duration("pingPeriod", startup.Instance.PingPeriod))
 }
 
-func (w *Worker) startPing(conn *websocket.Conn, stopPingCh <-chan bool) {
+func (w *Worker) startPing(conn *websocket.Conn, ctx context.Context) {
+	w.wg.Add(1)
+	defer w.wg.Done()
 	zap.L().Info("startPing begin", zap.Duration("pingPeriod", startup.Instance.PingPeriod))
 	ticker := time.NewTicker(startup.Instance.PingPeriod)
 
@@ -58,7 +61,7 @@ func (w *Worker) startPing(conn *websocket.Conn, stopPingCh <-chan bool) {
 				updatePeriod(true)
 			}
 			ticker.Reset(startup.Instance.PingPeriod)
-		case <-stopPingCh:
+		case <-ctx.Done():
 			zap.L().Info("执行stopPing")
 			ticker.Stop()
 			return

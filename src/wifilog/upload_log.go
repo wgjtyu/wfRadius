@@ -3,6 +3,7 @@ package wifilog
 import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"sync"
 	"time"
 	"wfRadius/model"
 	"wfRadius/src/request"
@@ -10,11 +11,17 @@ import (
 
 type Uploader struct {
 	db     *gorm.DB
+	quitCh chan int
+	wg     sync.WaitGroup
 	logger *zap.Logger
 }
 
 func NewUploader(db *gorm.DB, l *zap.Logger) *Uploader {
-	u := &Uploader{db: db, logger: l.Named("WifiLogUploader")}
+	u := &Uploader{
+		db:     db,
+		quitCh: make(chan int),
+		logger: l.Named("WifiLogUploader"),
+	}
 	go u.beginTask()
 	return u
 }
@@ -45,19 +52,26 @@ func (u *Uploader) uploadLog() {
 	}
 }
 
-// FIXME 改造成RateLimiter, 并在Shutdown时全部上传
+// FIXME 改造成RateLimiter
 func (u *Uploader) beginTask() {
-	d := time.Second * 300
+	u.wg.Add(1)
+	defer u.wg.Done()
 
-	t := time.NewTicker(d)
-	defer t.Stop()
+	ticker := time.NewTicker(time.Second * 300)
+	defer ticker.Stop()
 
 	for {
-		<-t.C
-		u.uploadLog()
+		select {
+		case <-ticker.C:
+			u.uploadLog()
+		case <-u.quitCh:
+			u.uploadLog()
+			return
+		}
 	}
 }
 
 func (u *Uploader) Shutdown() {
-	// FIXME implement it
+	u.quitCh <- 1
+	u.wg.Wait()
 }
