@@ -30,11 +30,11 @@ func (w *Worker) reader(c *websocket.Conn, reconnectCh chan bool) {
 		if result.Tag == "WIFI_CODE_ADD" || result.Tag == "WIFI_CODE_UPDATE" { // 添加或更新
 			var code model.MWifiCode
 			mapstructure.Decode(result.RawMsg, &code)
-			_ = util.UpdateCode(&code)
+			_ = w.UpdateCode(&code)
 		} else if result.Tag == "WIFI_CODE_GET_ALL" { // 获取所有
 			var codes []model.MWifiCode
 			_ = mapstructure.Decode(result.RawMsg, &codes)
-			_ = util.SaveCodes(codes)
+			_ = w.SaveCodes(codes)
 		} else if result.Tag == "COMMAND" { // 执行指令
 			zap.L().Info("reader-获取到指令")
 			var command util.CommandMessage

@@ -10,7 +10,7 @@ import (
 	"wfRadius/src/handler"
 	"wfRadius/src/root/startup"
 	"wfRadius/src/wifilog"
-	"wfRadius/ws"
+	"wfRadius/src/ws"
 )
 
 var Set = wire.NewSet(

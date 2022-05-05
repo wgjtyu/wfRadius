@@ -4,6 +4,7 @@ import (
 	"github.com/google/wire"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"net/http"
 	"sync"
 	"time"
@@ -21,13 +22,15 @@ var Set = wire.NewSet(
 type Worker struct {
 	reconnectCh chan bool
 	cfg         *config.MConfig
+	db          *gorm.DB
 	logger      *zap.Logger
 }
 
-func NewWorker(c *config.MConfig, l *zap.Logger) *Worker {
+func NewWorker(c *config.MConfig, l *zap.Logger, db *gorm.DB) *Worker {
 	return &Worker{
 		reconnectCh: make(chan bool, 1), // 避免执行优雅退出时，reader结束时发生阻塞
 		cfg:         c,
+		db:          db,
 		logger:      l.Named("ws.Worker"),
 	}
 }
