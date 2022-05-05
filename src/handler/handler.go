@@ -1,10 +1,9 @@
-package main
+package handler
 
 import (
 	"errors"
 	"time"
 	"wfRadius/model"
-	"wfRadius/storage"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -13,7 +12,7 @@ import (
 	"layeh.com/radius/rfc2866"
 )
 
-func handler(w radius.ResponseWriter, r *radius.Request) {
+func (rs *RadiusServer) handler(w radius.ResponseWriter, r *radius.Request) {
 	username := rfc2865.UserName_GetString(r.Packet)
 	password := rfc2865.UserPassword_GetString(r.Packet)
 	ip := rfc2865.LoginIPHost_Get(r.Packet)
@@ -25,7 +24,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	framedIpAddress := rfc2865.FramedIPAddress_Get(r.Packet)         // 客户端的IP地址
 	acctSessionId := rfc2866.AcctSessionID_GetString(r.Packet)       // 计费会话ID
 
-	zap.L().Info("handler-用户请求信息", zap.String("Code", r.Code.String()),
+	rs.logger.Info("handler-用户请求信息", zap.String("Code", r.Code.String()),
 		zap.String("IP", ip.String()),
 		zap.String("Port", port.String()),
 		zap.String("Srv", srv.String()),
@@ -41,11 +40,11 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 
 	var wifiCode model.MWifiCode
 	var code radius.Code
-	res := storage.DB.Find(&wifiCode, "user_id=?", username)
+	res := rs.db.Find(&wifiCode, "user_id=?", username)
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		code = radius.CodeAccessReject
 	} else if res.Error != nil {
-		zap.L().Warn("handler-db获取数据出错", zap.Error(res.Error))
+		rs.logger.Warn("handler-db获取数据出错", zap.Error(res.Error))
 		code = radius.CodeAccessReject
 	} else {
 		if wifiCode.Valid && wifiCode.WifiCode == password {
@@ -54,9 +53,9 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 			log.UserID = wifiCode.UserID
 			log.Time = time.Now()
 			log.MacAddr = callingStationID
-			err := storage.DB.Create(&log).Error
+			err := rs.db.Create(&log).Error
 			if err != nil {
-				zap.L().Error("创建log出错", zap.Error(err))
+				rs.logger.Error("创建log出错", zap.Error(err))
 			}
 			// } else if srvType == 0 {
 			// fmt.Printf("srvType==0\n")
@@ -66,7 +65,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 		}
 	}
 
-	zap.L().Info("Handler finished",
+	rs.logger.Info("Handler finished",
 		zap.String("code", code.String()),
 		zap.String("remoteAddr", r.RemoteAddr.String()))
 	_ = w.Write(r.Response(code))
