@@ -7,9 +7,11 @@
 package main
 
 import (
+	"wfRadius/src/handler"
 	"wfRadius/src/root"
 	"wfRadius/src/root/startup"
-	"wfRadius/ws"
+	"wfRadius/src/wifilog"
+	"wfRadius/src/ws"
 )
 
 // Injectors from wire.go:
@@ -21,12 +23,16 @@ func BuildApp() (*root.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	worker := ws.NewWorker(mConfig, logger)
+	worker := ws.NewWorker(mConfig, logger, db)
+	radiusServer := handler.NewRadiusServer(db, logger)
+	uploader := wifilog.NewUploader(db, logger)
 	app := &root.App{
-		Config: mConfig,
-		DB:     db,
-		Logger: logger,
-		Worker: worker,
+		Config:   mConfig,
+		DB:       db,
+		Logger:   logger,
+		Worker:   worker,
+		RServer:  radiusServer,
+		Uploader: uploader,
 	}
 	return app, nil
 }

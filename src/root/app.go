@@ -15,7 +15,7 @@ import (
 
 var Set = wire.NewSet(
 	startup.Set,
-	wire.Struct(new(App), "Config", "DB", "Logger"),
+	wire.Struct(new(App), "Config", "DB", "Logger", "Worker", "RServer", "Uploader"),
 )
 
 type App struct {

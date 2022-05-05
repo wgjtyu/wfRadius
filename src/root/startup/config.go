@@ -10,7 +10,7 @@ import (
 )
 
 // Instance 保存应用的配置
-var Instance config.MConfig
+var Instance *config.MConfig
 
 func InitCfg() *config.MConfig {
 	viper.SetConfigName("config")
@@ -19,7 +19,7 @@ func InitCfg() *config.MConfig {
 	if err != nil {
 		panic(fmt.Errorf("读取配置文件出错: %s", err.Error()))
 	}
-	err = viper.Unmarshal(Instance)
+	err = viper.Unmarshal(&Instance)
 	if err != nil {
 		panic(fmt.Errorf("解析配置文件出错: %s", err.Error()))
 	}
@@ -27,7 +27,7 @@ func InitCfg() *config.MConfig {
 	if Instance.PingPeriod == 0 { // 默认心跳间隔为60秒
 		Instance.PingPeriod = 60 * time.Second
 	}
-	return &Instance
+	return Instance
 }
 
 func SetPingPeriod() {
