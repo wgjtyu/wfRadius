@@ -43,7 +43,7 @@ func updatePeriod(success bool) {
 	zap.L().Info("下次心跳间隔", zap.Duration("pingPeriod", startup.Instance.PingPeriod))
 }
 
-func startPing(conn *websocket.Conn, stopPingCh <-chan bool) {
+func (w *Worker) startPing(conn *websocket.Conn, stopPingCh <-chan bool) {
 	zap.L().Info("startPing begin", zap.Duration("pingPeriod", startup.Instance.PingPeriod))
 	ticker := time.NewTicker(startup.Instance.PingPeriod)
 
