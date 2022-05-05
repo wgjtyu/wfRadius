@@ -1,5 +1,5 @@
 [Unit]
-Description=wfradius daemon
+Description=wfRadius daemon
 Documentation=https://github.com/404/404
 After=network-online.target
 
@@ -8,7 +8,7 @@ Type=simple
 ExecStart=/home/alarm/wfRadius/wfRadius_linux_arm /home/alarm/wfRadius
 User=alarm
 AmbientCapabilities=CAP_NET_BIND_SERVICE
-Restart=on-failure
+Restart=always
 RestartSec=60s
 
 [Install]
