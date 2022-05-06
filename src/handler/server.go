@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"layeh.com/radius"
+	"sync"
 )
 
 type RadiusServer struct {
@@ -20,7 +21,8 @@ func NewRadiusServer(db *gorm.DB, l *zap.Logger) *RadiusServer {
 	}
 }
 
-func (rs *RadiusServer) Serve() {
+func (rs *RadiusServer) Serve(wg *sync.WaitGroup) {
+	defer wg.Done()
 	rs.server = &radius.PacketServer{
 		Handler:      radius.HandlerFunc(rs.handler),
 		SecretSource: radius.StaticSecretSource([]byte(`secret`)),
@@ -28,7 +30,7 @@ func (rs *RadiusServer) Serve() {
 
 	err := rs.server.ListenAndServe()
 	if err != nil {
-		rs.logger.Error("Serve出错", zap.Error(err))
+		rs.logger.Debug("Serve出错", zap.Error(err))
 	} else {
 		rs.logger.Debug("Server结束")
 	}

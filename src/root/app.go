@@ -35,8 +35,9 @@ func (a *App) Run() {
 	var innerWg sync.WaitGroup
 	innerWg.Add(2)
 	go a.Worker.Start(&innerWg)
-	go a.RServer.Serve()
+	go a.RServer.Serve(&innerWg)
 	innerWg.Wait()
+	a.Logger.Debug("Run end")
 }
 
 func (a *App) Shutdown() {
@@ -54,6 +55,7 @@ func (a *App) Shutdown() {
 }
 
 func (a *App) WaitForEnd() {
+	a.Logger.Debug("WaitForEnd begin")
 	a.wg.Wait()
 
 	a.Logger.Debug("WaitForEnd end")

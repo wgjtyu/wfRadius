@@ -74,4 +74,5 @@ func (u *Uploader) beginTask() {
 func (u *Uploader) Shutdown() {
 	u.quitCh <- 1
 	u.wg.Wait()
+	u.logger.Debug("Shutdown end")
 }

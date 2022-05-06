@@ -33,6 +33,10 @@ func prog(state overseer.State) {
 
 	// 配置Http请求
 	request.Init(startup.Instance.Token, startup.Instance.HTTPBackend)
+	go func() {
+		<-state.GracefulShutdown
+		app.Shutdown()
+	}()
 	app.Run() // 在shutdown之前，会停在这里
 	app.WaitForEnd()
 }
