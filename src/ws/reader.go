@@ -5,7 +5,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 	"wfRadius/model"
-	"wfRadius/util"
 )
 
 // msgPack 服务器发来消息的包结构
@@ -39,9 +38,9 @@ func (w *Worker) reader(c *websocket.Conn) {
 			_ = w.SaveCodes(codes)
 		} else if result.Tag == "COMMAND" { // 执行指令
 			w.logger.Info("reader-获取到指令")
-			var command util.CommandMessage
+			var command commandMessage
 			mapstructure.Decode(result.RawMsg, &command)
-			go util.Proceed(command)
+			go w.cmdProcessor.Proceed(command, w.quitCh)
 		}
 	}
 }

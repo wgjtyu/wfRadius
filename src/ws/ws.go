@@ -18,24 +18,27 @@ const (
 
 var Set = wire.NewSet(
 	NewWorker,
+	NewCmdProcessor,
 )
 
 type Worker struct {
-	reconnectCh chan bool
-	quitCh      chan bool
-	cfg         *config.MConfig
-	db          *gorm.DB
-	wg          sync.WaitGroup
-	logger      *zap.Logger
+	cmdProcessor *cmdProcessor
+	reconnectCh  chan bool
+	quitCh       chan bool
+	cfg          *config.MConfig
+	db           *gorm.DB
+	wg           sync.WaitGroup
+	logger       *zap.Logger
 }
 
-func NewWorker(c *config.MConfig, l *zap.Logger, db *gorm.DB) *Worker {
+func NewWorker(c *config.MConfig, l *zap.Logger, db *gorm.DB, cp *cmdProcessor) *Worker {
 	return &Worker{
-		reconnectCh: make(chan bool, 1), // 避免执行优雅退出时，reader结束时发生阻塞
-		quitCh:      make(chan bool),
-		cfg:         c,
-		db:          db,
-		logger:      l.Named("ws.Worker"),
+		cmdProcessor: cp,
+		reconnectCh:  make(chan bool, 1), // 避免执行优雅退出时，reader结束时发生阻塞
+		quitCh:       make(chan bool, 1),
+		cfg:          c,
+		db:           db,
+		logger:       l.Named("ws.Worker"),
 	}
 }
 
