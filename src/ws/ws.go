@@ -51,11 +51,7 @@ func (w *Worker) Start(wg *sync.WaitGroup) {
 	}
 
 	url := w.cfg.WSBackend + "/api/ws"
-	reconnectCh := make(chan bool, 0)
-	defer close(reconnectCh)
-
 	pingCtx, stopPing := context.WithCancel(context.Background())
-
 	for {
 		time.Sleep(5 * time.Second) // 睡眠5秒，以便c.Close对startPing产生作用
 		c, resp, err := websocket.DefaultDialer.Dial(url, header)
@@ -74,10 +70,9 @@ func (w *Worker) Start(wg *sync.WaitGroup) {
 			stopPing()
 			c.Close()
 			return // 这里如果用break，会跳出select，不会跳出for循环，所以用return
-		case <-reconnectCh:
-			zap.L().Info("ws.Start-将于5s后重新连接")
-			stopPing()
-			updatePeriod(false)
+		case <-w.reconnectCh:
+			w.logger.Info("ws.Start-将于5s后重新连接")
+			w.updatePeriod(false)
 			c.Close()
 		}
 	}

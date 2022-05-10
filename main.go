@@ -32,7 +32,7 @@ func prog(state overseer.State) {
 		zap.String("BuildTime", util.BuildTime))
 
 	// 配置Http请求
-	request.Init(startup.Instance.Token, startup.Instance.HTTPBackend)
+	request.Init(app.Config.Token, app.Config.HTTPBackend)
 	go func() {
 		<-state.GracefulShutdown
 		app.Shutdown()
