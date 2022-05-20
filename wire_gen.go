@@ -25,15 +25,14 @@ func BuildApp() (*root.App, error) {
 	}
 	cmdProcessor := ws.NewCmdProcessor(mConfig, logger)
 	worker := ws.NewWorker(mConfig, logger, db, cmdProcessor)
-	radiusServer := handler.NewRadiusServer(db, logger)
 	uploader := wifilog.NewUploader(db, logger)
+	radiusServer := handler.NewRadiusServer(db, logger, uploader)
 	app := &root.App{
-		Config:   mConfig,
-		DB:       db,
-		Logger:   logger,
-		Worker:   worker,
-		RServer:  radiusServer,
-		Uploader: uploader,
+		Config:  mConfig,
+		DB:      db,
+		Logger:  logger,
+		Worker:  worker,
+		RServer: radiusServer,
 	}
 	return app, nil
 }

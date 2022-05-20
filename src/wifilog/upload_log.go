@@ -1,28 +1,28 @@
 package wifilog
 
 import (
+	"context"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 	"gorm.io/gorm"
 	"sync"
-	"time"
 	"wfRadius/model"
 	"wfRadius/src/request"
 )
 
 type Uploader struct {
-	db     *gorm.DB
-	quitCh chan int
-	wg     sync.WaitGroup
-	logger *zap.Logger
+	db      *gorm.DB
+	limiter *rate.Limiter
+	waitMux sync.Mutex
+	logger  *zap.Logger
 }
 
 func NewUploader(db *gorm.DB, l *zap.Logger) *Uploader {
 	u := &Uploader{
-		db:     db,
-		quitCh: make(chan int),
-		logger: l.Named("WifiLogUploader"),
+		db:      db,
+		limiter: rate.NewLimiter(0.1, 1), // 1秒补充0.1个令牌
+		logger:  l.Named("WifiLogUploader"),
 	}
-	go u.beginTask()
 	return u
 }
 
@@ -52,27 +52,14 @@ func (u *Uploader) uploadLog() {
 	}
 }
 
-// FIXME 改造成RateLimiter
-func (u *Uploader) beginTask() {
-	u.wg.Add(1)
-	defer u.wg.Done()
-
-	ticker := time.NewTicker(time.Second * 300)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			u.uploadLog()
-		case <-u.quitCh:
-			u.uploadLog()
-			return
-		}
+func (u *Uploader) CheckAndUpload() {
+	if !u.waitMux.TryLock() {
+		return
 	}
-}
-
-func (u *Uploader) Shutdown() {
-	u.quitCh <- 1
-	u.wg.Wait()
-	u.logger.Debug("Shutdown end")
+	err := u.limiter.Wait(context.Background())
+	if err != nil {
+		u.logger.Error("limiter.Wait failed", zap.Error(err))
+	}
+	u.waitMux.Unlock()
+	u.uploadLog()
 }

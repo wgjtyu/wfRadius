@@ -57,6 +57,7 @@ func (rs *RadiusServer) handler(w radius.ResponseWriter, r *radius.Request) {
 			if err != nil {
 				rs.logger.Error("创建log出错", zap.Error(err))
 			}
+			go rs.Uploader.CheckAndUpload()
 			// } else if srvType == 0 {
 			// fmt.Printf("srvType==0\n")
 			// code = radius.CodeAccessAccept

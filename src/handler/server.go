@@ -6,18 +6,21 @@ import (
 	"gorm.io/gorm"
 	"layeh.com/radius"
 	"sync"
+	"wfRadius/src/wifilog"
 )
 
 type RadiusServer struct {
-	server *radius.PacketServer
-	db     *gorm.DB
-	logger *zap.Logger
+	server   *radius.PacketServer
+	db       *gorm.DB
+	Uploader *wifilog.Uploader
+	logger   *zap.Logger
 }
 
-func NewRadiusServer(db *gorm.DB, l *zap.Logger) *RadiusServer {
+func NewRadiusServer(db *gorm.DB, l *zap.Logger, u *wifilog.Uploader) *RadiusServer {
 	return &RadiusServer{
-		db:     db,
-		logger: l.Named("RadiusServer"),
+		db:       db,
+		Uploader: u,
+		logger:   l.Named("RadiusServer"),
 	}
 }
 

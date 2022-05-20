@@ -9,23 +9,21 @@ import (
 	"wfRadius/src/config"
 	"wfRadius/src/handler"
 	"wfRadius/src/root/startup"
-	"wfRadius/src/wifilog"
 	"wfRadius/src/ws"
 )
 
 var Set = wire.NewSet(
 	startup.Set,
-	wire.Struct(new(App), "Config", "DB", "Logger", "Worker", "RServer", "Uploader"),
+	wire.Struct(new(App), "Config", "DB", "Logger", "Worker", "RServer"),
 )
 
 type App struct {
-	Logger   *zap.Logger
-	DB       *gorm.DB
-	Config   *config.MConfig
-	Worker   *ws.Worker
-	RServer  *handler.RadiusServer
-	Uploader *wifilog.Uploader
-	wg       sync.WaitGroup
+	Logger  *zap.Logger
+	DB      *gorm.DB
+	Config  *config.MConfig
+	Worker  *ws.Worker
+	RServer *handler.RadiusServer
+	wg      sync.WaitGroup
 }
 
 func (a *App) Run() {
@@ -49,7 +47,6 @@ func (a *App) Shutdown() {
 	if err != nil {
 		a.Logger.Error("RServer.Shutdown()出错", zap.Error(err))
 	}
-	a.Uploader.Shutdown()
 
 	a.Logger.Debug("Shutdown结束")
 }
