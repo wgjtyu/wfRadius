@@ -14,12 +14,15 @@ import (
 	"go.uber.org/zap"
 )
 
+var CmdQuit chan bool
+
 type cmdProcessor struct {
 	cfg    *config.MConfig
 	logger *zap.Logger
 }
 
 func NewCmdProcessor(cfg *config.MConfig, l *zap.Logger) *cmdProcessor {
+	CmdQuit = make(chan bool)
 	return &cmdProcessor{
 		cfg:    cfg,
 		logger: l.Named("cmdProcessor"),
@@ -27,7 +30,7 @@ func NewCmdProcessor(cfg *config.MConfig, l *zap.Logger) *cmdProcessor {
 }
 
 // Proceed 处理设备指令并返回结果
-func (c *cmdProcessor) Proceed(msg commandMessage, quitCh chan<- bool) {
+func (c *cmdProcessor) Proceed(msg commandMessage) {
 	var inMsg innerMessage
 	err := json.Unmarshal([]byte(msg.Content), &inMsg)
 	if err != nil {
@@ -60,7 +63,7 @@ func (c *cmdProcessor) Proceed(msg commandMessage, quitCh chan<- bool) {
 		c.putResult(msg.CommandID, &map[string]interface{}{"status": "ok"})
 	} else if inMsg.Name == "REBOOT" {
 		c.putResult(msg.CommandID, &map[string]interface{}{"status": "ok"})
-		quitCh <- true
+		CmdQuit <- true
 	} else {
 		c.putResult(msg.CommandID, &map[string]interface{}{"error": "unknown command"})
 	}

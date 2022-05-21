@@ -40,7 +40,7 @@ func (w *Worker) reader(c *websocket.Conn) {
 			w.logger.Info("reader-获取到指令")
 			var command commandMessage
 			mapstructure.Decode(result.RawMsg, &command)
-			go w.cmdProcessor.Proceed(command, w.quitCh)
+			go w.cmdProcessor.Proceed(command)
 		}
 	}
 }

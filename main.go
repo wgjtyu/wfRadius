@@ -13,6 +13,7 @@ import (
 	"wfRadius/src/config"
 	"wfRadius/src/request"
 	"wfRadius/src/root/startup"
+	"wfRadius/src/ws"
 	"wfRadius/util"
 )
 
@@ -34,8 +35,12 @@ func prog(state overseer.State) {
 	// 配置Http请求
 	request.Init(app.Config.Token, app.Config.HTTPBackend)
 	go func() {
-		<-state.GracefulShutdown
-		app.Shutdown()
+		select {
+		case <-ws.CmdQuit:
+			app.Shutdown()
+		case <-state.GracefulShutdown:
+			app.Shutdown()
+		}
 	}()
 	app.Run() // 在shutdown之前，会停在这里
 	app.WaitForEnd()
